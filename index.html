@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>90s Financial Life Trail Game - Young Adult Edition (2025)</title>
+  <style>
+    /* 90s-inspired retro design */
+    body {
+      font-family: "Courier New", Courier, monospace;
+      background: repeating-linear-gradient(45deg, #ff99cc, #ff99cc 10px, #66ccff 10px, #66ccff 20px);
+      margin: 0;
+      padding: 0;
+      color: #000;
+    }
+    #game-container {
+      background: #ffffe0;
+      border: 5px double #000080;
+      border-radius: 8px;
+      max-width: 700px;
+      margin: 30px auto;
+      padding: 20px;
+      box-shadow: 5px 5px 0px #000;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+    #turn-display, #balance, #loan-balance, #education-loan, #narrative, #choices {
+      margin-bottom: 20px;
+      padding: 10px;
+      background: #fff;
+      border: 2px solid #000080;
+      border-radius: 4px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      border: 2px solid #000080;
+      background: #ffcc00;
+      cursor: pointer;
+      box-shadow: 2px 2px 0px #000;
+    }
+    button:hover {
+      background: #ffdd33;
+    }
+    #control-buttons {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <h1>Financial Life Trail Game - Young Adult Edition (2025)</h1>
+    <div id="turn-display">Day: 0</div>
+    <div id="balance">Account Balance: $0</div>
+    <div id="loan-balance">Credit Loan Balance: $0</div>
+    <div id="education-loan">Education Loan Balance: $0</div>
+    <div id="narrative">
+      <p>
+        Welcome! Your financial journey begins now. Your grades determine your starting profession, salary, and initial funds. Every day you’ll face living expenses and choices—like buying coffee, dining out, shopping, traveling, or partying—that can quickly lead to mounting debt. In addition, you start with an education loan that requires weekly payments. Also, a rare promotion might boost your earnings—but it happens only once per game. Click "Start Game" to begin your retro adventure!
+      </p>
+    </div>
+    <div id="choices"></div>
+    <div id="control-buttons">
+      <button id="next-button" onclick="nextEvent()">Start Game</button>
+      <button id="pay-loan-button" onclick="payLoan()">Pay Credit Loan</button>
+    </div>
+  </div>
+  
+  <script>
+    // Global game state variables
+    let accountBalance, loanBalance, weeklyPay, profession, turn = 0, gameActive = false;
+    let educationLoan = 0; // Student debt
+    let promotionHappened = false; // Promotion can happen only once
+    let pendingRepayments = []; // For events like lending to a friend
+
+    // Helper functions for UI updates
+    function updateDisplay(text) {
+      document.getElementById("narrative").innerHTML = "<p>" + text + "</p>";
+    }
+    function updateBalances() {
+      document.getElementById("balance").innerHTML = "Account Balance: $" + accountBalance;
+      document.getElementById("loan-balance").innerHTML = "Credit Loan Balance: $" + loanBalance;
+      document.getElementById("education-loan").innerHTML = "Education Loan Balance: $" + educationLoan;
+    }
+    function updateTurnDisplay() {
+      document.getElementById("turn-display").innerHTML = "Day: " + turn;
+    }
+    function clearChoices() {
+      document.getElementById("choices").innerHTML = "";
+    }
+    function createChoiceButton(text, callback) {
+      let btn = document.createElement("button");
+      btn.innerText = text;
+      btn.onclick = callback;
+      document.getElementById("choices").appendChild(btn);
+    }
+
+    // Initializes the game by asking for the player's grade
+    function startGame() {
+      let grade = prompt("Enter your average grade (0-100):", "80");
+      grade = parseInt(grade);
+      if (isNaN(grade)) grade = 80; // default
+
+      // Determine profession, weekly pay, starting funds, and set education loan based on grade
+      if (grade >= 90) {
+        profession = "Doctor";
+        weeklyPay = 1500;
+        accountBalance = 5000;
+        educationLoan = 50000;
+      } else if (grade >= 80) {
+        profession = "Engineer";
+        weeklyPay = 1200;
+        accountBalance = 4000;
+        educationLoan = 40000;
+      } else if (grade >= 70) {
+        profession = "Teacher";
+        weeklyPay = 900;
+        accountBalance = 3000;
+        educationLoan = 30000;
+      } else {
+        profession = "Retail Worker";
+        weeklyPay = 600;
+        accountBalance = 1500;
+        educationLoan = 20000;
+      }
+      loanBalance = 0;
+      updateDisplay("You began your journey as a " + profession + ". Your starting account balance is $" + accountBalance + ", weekly pay is $" + weeklyPay + ", and you have an education loan of $" + educationLoan + ".");
+      updateBalances();
+    }
+
+    // Standard events with updated 2025 costs
+
+    function eventFlatTire() {
+      let cost = 100 + Math.floor(Math.random() * 101); // $100 to $200
+      accountBalance -= cost;
+      updateDisplay("A flat tire slows you down. You paid $" + cost + " for repairs.");
+      updateBalances();
+    }
+
+    function eventLoanShark() {
+      updateDisplay("A loan shark offers you a quick credit loan of $1000. Do you accept? (Remember, you'll owe this amount.)");
+      clearChoices();
+      createChoiceButton("Accept Loan", function() {
+        accountBalance += 1000;
+        loanBalance += 1000;
+        updateDisplay("You accepted the loan. Your account increases by $1000, but your credit loan balance increases by $1000.");
+        updateBalances();
+        clearChoices();
+      });
+      createChoiceButton("Decline", function() {
+        updateDisplay("You wisely declined the loan offer.");
+        clearChoices();
+      });
+    }
+
+    function eventHealth() {
+      let cost = 200 + Math.floor(Math.random() * 201); // $200 to $400
+      accountBalance -= cost;
+      updateDisplay("A sudden health issue arises. You pay $" + cost + " for medical bills.");
+      updateBalances();
+    }
+
+    function eventGambling() {
+      updateDisplay("You stumble upon a gambling table. Do you try your luck?");
+      clearChoices();
+      createChoiceButton("Gamble", function() {
+        let gambleOutcome = Math.random();
+        if (gambleOutcome < 0.5) {
+          let loss = 200;
+          accountBalance -= loss;
+          updateDisplay("Unlucky! You lost $" + loss + " at the gambling table.");
+        } else {
+          let win = 300;
+          accountBalance += win;
+          updateDisplay("Fortune smiles on you! You won $" + win + " gambling.");
+        }
+        updateBalances();
+        clearChoices();
+      });
+      createChoiceButton("Skip", function() {
+        updateDisplay("You decided not to gamble.");
+        clearChoices();
+      });
+    }
+
+    function eventLending() {
+      updateDisplay("A friend asks to borrow $500. Do you lend them the money?");
+      clearChoices();
+      createChoiceButton("Lend Money", function() {
+        accountBalance -= 500;
+        updateDisplay("You lent $500 to your friend. They promise to repay you with interest in 2 days.");
+        pendingRepayments.push({amount: 600, dueTurn: turn + 2});
+        updateBalances();
+        clearChoices();
+      });
+      createChoiceButton("Decline", function() {
+        updateDisplay("You decided not to lend money.");
+        clearChoices();
+      });
+    }
+
+    function eventKids() {
+      let cost = 500;
+      accountBalance -= cost;
+      updateDisplay("You had a kid! While joyful, you spent $" + cost + " on baby supplies.");
+      updateBalances();
+    }
+
+    function eventGoingOutToEat() {
+      let mealCost = 60 + Math.floor(Math.random() * 91); // $60 to $150
+      updateDisplay("You decide to dine out. Your meal costs $" + mealCost + ". How do you pay?");
+      clearChoices();
+      createChoiceButton("Pay with Cash", function() {
+        accountBalance -= mealCost;
+        updateDisplay("You enjoyed a meal out and paid $" + mealCost + " in cash.");
+        updateBalances();
+        clearChoices();
+      });
+      createChoiceButton("Use Credit Card", function() {
+        loanBalance += mealCost;
+        updateDisplay("You charged your meal to your credit card. Your credit loan balance increases by $" + mealCost + ".");
+        updateBalances();
+        clearChoices();
+      });
+    }
+
+    // New Daily Spending Choices
+
+    function eventCoffee() {
+      updateDisplay("Morning time—do you grab a coffee?");
+      clearChoices();
+      createChoiceButton("Buy Coffee", function() {
+        let coffeeCost = 5 + Math.floor(Math.random() * 6); // $5 to $10
+        accountBalance -= coffeeCost;
+        updateDisplay("You bought a coffee for $" + coffeeCost + ".");
+        updateBalances();
+        clearChoices();
+      });
+      createChoiceButton("Skip Coffee", function() {
+        updateDisplay("You decided to skip coffee today.");
+        clearChoices();
+      });
+    }
+
+    function eventShopping() {
+      updateDisplay("You pass by a trendy store. Do you want to go shopping?");
+      clearChoices();
+      createChoiceButton("Go Shopping", function() {
+        let shoppingCost = 150 + Math.floor(Math.random() * 151); // $150 to $300
+        accountBalance -= shoppingCost;
+        updateDisplay("You went on a shopping spree and spent $" + shoppingCost + " on new clothes and gadgets.");
+        updateBalances();
+        clearChoices();
+      });
+      createChoiceButton("Skip Shopping", function() {
+        updateDisplay("You decided to save money and skipped shopping.");
+        clearChoices();
+      });
+    }
+
+    function eventWeekendTrip() {
+      updateDisplay("It's the weekend. Do you want to take a spontaneous trip?");
+      clearChoices();
+      createChoiceButton("Take Trip", function() {
+        let tripCost = 300 + Math.floor(Math.random() * 201); // $300 to $500
+        accountBalance -= tripCost;
+        updateDisplay("You took a weekend trip and spent $" + tripCost + " on travel and leisure.");
+        updateBalances();
+        clearChoices();
+      });
+      createChoiceButton("Stay Home", function() {
+        updateDisplay("You decided to stay home and save money.");
+        clearChoices();
+      });
+    }
+
+    function eventNightOut() {
+      updateDisplay("It's Friday night! Do you want to go out partying?");
+      clearChoices();
+      createChoiceButton("Go Out", function() {
+        let nightOutCost = 50 + Math.floor(Math.random() * 101); // $50 to $150
+        accountBalance -= nightOutCost;
+        updateDisplay("You went out and spent $" + nightOutCost + " on a night out with friends.");
+        updateBalances();
+        clearChoices();
+      });
+      createChoiceButton("Stay In", function() {
+        updateDisplay("You decided to stay in and save money tonight.");
+        clearChoices();
+      });
+    }
+
+    // Monthly Rent Payment Event (remains unchanged)
+    function eventRent() {
+      let rentCost = 1200 + Math.floor(Math.random() * 601); // $1200 to $1800
+      updateDisplay("Monthly rent is due! Your rent is $" + rentCost + ". How would you like to pay?");
+      clearChoices();
+      createChoiceButton("Pay with Cash", function() {
+        accountBalance -= rentCost;
+        updateDisplay("You paid $" + rentCost + " in cash for rent.");
+        updateBalances();
+        clearChoices();
+      });
+      createChoiceButton("Use Credit Card", function() {
+        let fee = Math.round(rentCost * 0.1);
+        loanBalance += (rentCost + fee);
+        updateDisplay("You used your credit card to pay rent. Your credit loan balance increases by $" + (rentCost + fee) + " (including a $" + fee + " fee).");
+        updateBalances();
+        clearChoices();
+      });
+    }
+
+    // Interest on Credit Loan: applies every 3 days if you have outstanding debt
+    function eventInterest() {
+      let interest = Math.round(loanBalance * 0.05);
+      loanBalance += interest;
+      updateDisplay("Interest charges apply! An additional $" + interest + " has been added to your credit loan balance.");
+      updateBalances();
+    }
+
+    // Rare Promotion Event (only once per play)
+    function eventPromotion() {
+      weeklyPay += 200;
+      accountBalance += 300;
+      updateDisplay("A rare promotion opportunity arises! You receive a promotion that boosts your weekly pay by $200 and gives you a $300 bonus.");
+      updateBalances();
+    }
+
+    // Array of random events (promotion is now handled separately)
+    let events = [
+      eventFlatTire,
+      eventLoanShark,
+      eventHealth,
+      eventGambling,
+      eventLending,
+      eventKids,
+      eventGoingOutToEat,
+      eventCoffee,
+      eventShopping,
+      eventWeekendTrip,
+      eventNightOut
+    ];
+
+    // Function to progress the game (daily cycle, weekly pay/groceries/education loan, monthly rent, interest, etc.)
+    function nextEvent() {
+      if (!gameActive) {
+        startGame();
+        document.getElementById("next-button").innerText = "Next Day";
+        gameActive = true;
+        updateTurnDisplay();
+        updateBalances();
+        return;
+      }
+      
+      // Increment day counter and update display
+      turn++;
+      updateTurnDisplay();
+      
+      // Daily living expense: $25–$50
+      let dailyExpense = 25 + Math.floor(Math.random() * 26);
+      accountBalance -= dailyExpense;
+      let message = "Day " + turn + ": A daily expense of $" + dailyExpense + " has been deducted.";
+      
+      // Process any pending repayments (e.g., friend loans) due today
+      let specialProcessed = false;
+      for (let i = pendingRepayments.length - 1; i >= 0; i--) {
+        if (pendingRepayments[i].dueTurn === turn) {
+          let repayment = pendingRepayments[i];
+          accountBalance += repayment.amount; // friend repays
+          message += " Also, your friend repaid $" + repayment.amount + ".";
+          pendingRepayments.splice(i, 1);
+          specialProcessed = true;
+        }
+      }
+      updateDisplay(message);
+      updateBalances();
+      
+      // Monthly event: Rent Payment every 30 days
+      if (turn % 30 === 0) {
+        setTimeout(eventRent, 1000);
+        return;
+      }
+      
+      // Weekly event: Every 7 days (if not a monthly event)
+      if (turn % 7 === 0) {
+        let weeklyExpense = 70 + Math.floor(Math.random() * 51); // $70 to $120 for groceries
+        accountBalance += weeklyPay; // Receive weekly pay
+        
+        // Deduct education loan payment (e.g., $200 per week)
+        let eduPayment = 200;
+        if (educationLoan > 0) {
+          if (educationLoan < eduPayment) { eduPayment = educationLoan; }
+          accountBalance -= eduPayment;
+          educationLoan -= eduPayment;
+          updateDisplay("Day " + turn + " (Weekly): You received your weekly pay of $" + weeklyPay + " and spent $" + weeklyExpense + " on groceries, and paid an education loan payment of $" + eduPayment + ".");
+        } else {
+          updateDisplay("Day " + turn + " (Weekly): You received your weekly pay of $" + weeklyPay + " and spent $" + weeklyExpense + " on groceries.");
+        }
+        accountBalance -= weeklyExpense;
+        updateBalances();
+        return;
+      }
+      
+      // Interest event: every 3 days if you have an outstanding credit loan
+      if (turn % 3 === 0 && loanBalance > 0) {
+        eventInterest();
+        return;
+      }
+      
+      // Rare Promotion Check: If promotion hasn't happened, very low chance per day (~0.5%)
+      if (!promotionHappened && Math.random() < 0.005) {
+        eventPromotion();
+        promotionHappened = true;
+        return;
+      }
+      
+      // If a pending repayment event was processed, skip a random event for today.
+      if (specialProcessed) return;
+      
+      // Otherwise, choose a random event from the events array.
+      let randomIndex = Math.floor(Math.random() * events.length);
+      let chosenEvent = events[randomIndex];
+      chosenEvent();
+    }
+
+    // Function to allow the player to pay off a portion of their credit loan manually.
+    function payLoan() {
+      if (loanBalance <= 0) {
+        updateDisplay("You have no outstanding credit loans to pay.");
+        return;
+      }
+      let amount = prompt("Your credit loan balance is $" + loanBalance + ". Enter the amount you wish to pay from your account balance:");
+      amount = parseInt(amount);
+      if (isNaN(amount) || amount <= 0) {
+        updateDisplay("Invalid amount entered.");
+        return;
+      }
+      if (amount > accountBalance) {
+        updateDisplay("You do not have enough funds to pay that amount.");
+        return;
+      }
+      if (amount > loanBalance) {
+        amount = loanBalance;
+      }
+      accountBalance -= amount;
+      loanBalance -= amount;
+      updateDisplay("You paid $" + amount + " toward your credit loan.");
+      updateBalances();
+    }
+
+    // Set up the game when the page loads.
+    window.onload = function() {
+      document.getElementById("next-button").innerText = "Start Game";
+      updateTurnDisplay();
+      updateBalances();
+    }
+  </script>
+</body>
+</html>
